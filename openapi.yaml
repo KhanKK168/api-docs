@@ -28,8 +28,7 @@ info:
     **หมายเหตุ**: API Key สามารถใช้ได้เฉพาะผู้ใช้ที่มีสถานะ Dealer เท่านั้น
   contact:
     name: LnwBux Support
-    email: support@lnwbux.com
-    url: https://www.lnwbux.com/support
+    url: https://discord.com/invite/7f7s8ezTV3
 servers:
   - url: https://api.lnwbux.com
     description: Production Server
