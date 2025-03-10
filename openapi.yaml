@@ -1,30 +1,622 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  title: ชื่อ API ของคุณ
+  title: LnwBux API
   version: "1.0.0"
-  description: คำอธิบาย API ของคุณ
+  description: |
+    # API สำหรับระบบ LnwBux
+
+    API นี้ให้บริการสำหรับระบบ LnwBux ประกอบด้วย:
+
+    - **การจัดการผู้ใช้งาน**: จัดการโปรไฟล์และ API Key
+    - **การจัดการคำสั่งซื้อ**: สร้าง, อัพเดท, ดูรายละเอียด, ดูรายการคำสั่งซื้อ
+    - **การเติมเงิน**: เติมเงินผ่าน TrueWallet
+    - **ข้อมูลทั่วไป**: ดูยอดเงิน, ดูข้อมูลบริการ, ดูข้อมูลผู้ใช้
+
+    ## การใช้งาน
+
+    API นี้ใช้ระบบ Authentication แบบ API Key โดยต้องส่ง API Key ในส่วน header ของทุก request
+
+    ### การใช้งาน API Key
+
+    ส่ง API Key ในรูปแบบ header ดังนี้:
+    ```
+    X-API-Key: {apiKey}
+    ```
+
+    API Key จะมีรูปแบบ: `{objectID}-{randomString}` โดยที่ objectID คือรหัสผู้ใช้ และ randomString คือสตริงสุ่ม
+
+    **หมายเหตุ**: API Key สามารถใช้ได้เฉพาะผู้ใช้ที่มีสถานะ Dealer เท่านั้น
+  contact:
+    name: LnwBux Support
+    email: support@lnwbux.com
+    url: https://www.lnwbux.com/support
 servers:
-  - url: https://api.example.com/v1
-    description: Production server
+  - url: https://api.lnwbux.com
+    description: Production Server
+  - url: http://localhost:3000
+    description: Development Server
+
+tags:
+  - name: Users
+    description: การจัดการข้อมูลผู้ใช้งาน
+  - name: Orders
+    description: การจัดการคำสั่งซื้อ
+  - name: Topup
+    description: การเติมเงิน
+  - name: Info
+    description: ข้อมูลทั่วไป
+
 paths:
-  /users:
+  /user/active/apikey:
     get:
-      summary: ดึงข้อมูลผู้ใช้
+      tags:
+        - Users
+      summary: เปิดใช้งาน API Key
+      description: เปิดใช้งาน API Key สำหรับผู้ใช้ที่มีสถานะ Dealer
+      operationId: getActiveApi
+      security:
+        - apiKeyAuth: []
       responses:
         "200":
-          description: สำเร็จ
+          description: เปิดใช้งาน API Key สำเร็จ
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  message:
+                    type: string
+                  apiKey:
+                    type: string
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /user/disable/apikey:
+    get:
+      tags:
+        - Users
+      summary: ปิดใช้งาน API Key
+      description: ปิดใช้งาน API Key ที่เปิดใช้งานอยู่
+      operationId: disactiveApi
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: ปิดใช้งาน API Key สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /order/list:
+    get:
+      tags:
+        - Orders
+      summary: ดึงรายการคำสั่งซื้อ
+      description: ดึงรายการคำสั่งซื้อทั้งหมดของผู้ใช้
+      operationId: getOrderList
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: ดึงข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /order/detail:
+    get:
+      tags:
+        - Orders
+      summary: ดึงรายละเอียดคำสั่งซื้อ
+      description: ดึงรายละเอียดคำสั่งซื้อตาม ID
+      operationId: getOrderDetailById
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: ID ของคำสั่งซื้อ
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ดึงข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /order/create:
+    post:
+      tags:
+        - Orders
+      summary: สร้างคำสั่งซื้อใหม่
+      description: สร้างคำสั่งซื้อใหม่
+      operationId: createOrder
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "200":
+          description: สร้างคำสั่งซื้อสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Order"
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /order/edit:
+    put:
+      tags:
+        - Orders
+      summary: แก้ไขคำสั่งซื้อ
+      description: แก้ไขคำสั่งซื้อที่มีอยู่
+      operationId: updateOrder
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: id
+          in: query
+          description: ID ของคำสั่งซื้อ
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: การกระทำที่ต้องการทำกับคำสั่งซื้อ
+          required: true
+          schema:
+            type: string
+            enum: [cookie, webhook]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderUpdate"
+      responses:
+        "200":
+          description: แก้ไขคำสั่งซื้อสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ไม่พบคำสั่งซื้อหรือ action ไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: คำขอมากเกินไป (rate limit)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /topup/wallet:
+    post:
+      tags:
+        - Topup
+      summary: เติมเงินผ่าน TrueWallet
+      description: เติมเงินเข้าบัญชีผู้ใช้ผ่าน TrueWallet
+      operationId: topupTrueWallet
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - link
+              properties:
+                link:
+                  type: string
+                  description: ลิงก์อั่งเปาจาก TrueWallet
+      responses:
+        "200":
+          description: เติมเงินสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  amount:
+                    type: number
+                  balance:
+                    type: number
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: คำขอมากเกินไป
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: เซิร์ฟเวอร์มีปัญหา
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /info/balance:
+    get:
+      tags:
+        - Info
+      summary: ดูยอดเงิน
+      description: ดูยอดเงินคงเหลือและยอดเงินที่เติมทั้งหมด
+      operationId: getBalance
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: ดึงข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  balance:
+                    type: number
+                  totalDeposit:
+                    type: number
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /info/service:
+    get:
+      tags:
+        - Info
+      summary: ดูข้อมูลบริการ
+      description: ดูข้อมูลบริการทั้งหมดที่มีให้บริการ
+      operationId: getAllService
+      responses:
+        "200":
+          description: ดึงข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Service"
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /info/user:
+    get:
+      tags:
+        - Info
+      summary: ดูข้อมูลผู้ใช้
+      description: ดูข้อมูลผู้ใช้ปัจจุบัน
+      operationId: getUser
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: ดึงข้อมูลสำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: คำขอไม่ถูกต้อง
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: ไม่ได้รับอนุญาต
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API Key สำหรับการยืนยันตัวตน ใช้ได้เฉพาะผู้ใช้ที่มีสถานะ Dealer เท่านั้น
+        รูปแบบ: {objectID}-{randomString} โดยที่ objectID คือรหัสผู้ใช้ และ randomString คือสตริงสุ่ม
+
   schemas:
     User:
       type: object
       properties:
-        id:
+        _id:
+          type: string
+          description: รหัสผู้ใช้
+        username:
+          type: string
+          description: ชื่อผู้ใช้
+        email:
+          type: string
+          format: email
+          description: อีเมลผู้ใช้
+        avatar:
+          type: string
+          description: URL รูปโปรไฟล์
+        point:
+          type: number
+          description: จำนวนพอยท์ที่มี
+        totalDeposit:
+          type: number
+          description: ยอดเงินที่เติมทั้งหมด
+        role:
+          type: string
+          description: บทบาทของผู้ใช้ (User, Dealer, Admin)
+        apiKey:
+          type: string
+          description: API Key สำหรับการยืนยันตัวตน (เฉพาะผู้ใช้ที่มีสถานะ Dealer)
+        createdAt:
+          type: string
+          format: date-time
+          description: วันที่สร้างบัญชี
+
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: รหัสคำสั่งซื้อ
+        userId:
+          type: string
+          description: รหัสผู้ใช้ที่สร้างคำสั่งซื้อ
+        serviceId:
+          type: string
+          description: รหัสบริการ
+        serviceName:
+          type: string
+          description: ชื่อบริการ
+        target:
+          $ref: "#/components/schemas/Target"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+          description: สถานะคำสั่งซื้อ
+        price:
+          type: number
+          description: ราคาคำสั่งซื้อ
+        createdAt:
+          type: string
+          format: date-time
+          description: วันที่สร้างคำสั่งซื้อ
+        updatedAt:
+          type: string
+          format: date-time
+          description: วันที่อัพเดทคำสั่งซื้อล่าสุด
+
+    OrderInput:
+      type: object
+      required:
+        - gameMap
+        - cookie
+        - target
+      properties:
+        gameMap:
+          type: string
+          description: ชื่อแมพ
+        cookie:
+          type: string
+          description: คุกกี้สำหรับการเข้าถึง
+        target:
+          $ref: "#/components/schemas/Target"
+        webhookDiscord:
+          type: string
+          description: URL webhook Discord สำหรับการแจ้งเตือน (ไม่บังคับ)
+
+    OrderUpdate:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: string
+          description: ข้อมูลที่ต้องการอัพเดท (cookie หรือ webhook URL ขึ้นอยู่กับ action)
+
+    Target:
+      type: object
+      required:
+        - serviceType
+        - serviceTarget
+      properties:
+        serviceType:
+          type: string
+          enum: [normal, kaitun]
+          description: ประเภทของบริการ
+        serviceTarget:
+          type: array
+          description: รายการบริการที่ต้องการ
+          items:
+            $ref: "#/components/schemas/ServiceTarget"
+
+    ServiceTarget:
+      type: object
+      required:
+        - serviceID
+      properties:
+        serviceID:
+          type: string
+          description: รหัสบริการ
+        serviceName:
+          type: string
+          description: ชื่อบริการ
+        nameBind:
+          type: string
+          description: ชื่อในเกม
+        point:
           type: integer
+          description: จำนวนพอยท์ที่ใช้
+        isComplete:
+          type: boolean
+          description: สถานะการทำงานเสร็จสิ้น
+
+    Service:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: รหัสบริการ
         name:
           type: string
+          description: ชื่อบริการ
+        description:
+          type: string
+          description: คำอธิบายบริการ
+        price:
+          type: number
+          description: ราคาบริการ
+        category:
+          type: string
+          description: หมวดหมู่บริการ
+        isActive:
+          type: boolean
+          description: สถานะการใช้งานบริการ
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: ข้อความแสดงข้อผิดพลาด
+        message:
+          type: string
+          description: รายละเอียดข้อผิดพลาด
