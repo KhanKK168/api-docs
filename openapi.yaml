@@ -1,25 +1,30 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
-  title: My API
-  description: Example API Documentation
-  version: 1.0.0
+  title: ชื่อ API ของคุณ
+  version: "1.0.0"
+  description: คำอธิบาย API ของคุณ
 servers:
   - url: https://api.example.com/v1
+    description: Production server
 paths:
   /users:
     get:
-      summary: Get all users
+      summary: ดึงข้อมูลผู้ใช้
       responses:
         "200":
-          description: Success
+          description: สำเร็จ
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
+                  $ref: "#/components/schemas/User"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
